@@ -36,23 +36,19 @@ jobs:
           choco install -y googlechrome vscode 7zip rclone
 
       - name: Download Previous Session Files from Cloud
-        if: secrets.RCLONE_CONF
+        if: ${{ secrets.RCLONE_CONF }} # ڕاستکرایەوە
         run: |
           Write-Host "Attempting to download previous session files..."
           $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
           $configPath = "$env:APPDATA\rclone\rclone.conf"
           New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
           Set-Content -Path $configPath -Value $rcloneConfig
-
-          $remoteName = "gdrive1" # گۆڕدرا بۆ ناوی remoteـەکەی تۆ
+          $remoteName = "gdrive1"
           $backupFolder = "My_RDP_Backup"
-
           Write-Host "Downloading Desktop files..."
           rclone copy "$remoteName:$backupFolder/Desktop" "C:\Users\yusf2000\Desktop" --ignore-errors
-
           Write-Host "Downloading Documents files..."
           rclone copy "$remoteName:$backupFolder/Documents" "C:\Users\yusf2000\Documents" --ignore-errors
-
           Write-Host "File download process finished."
 
       - name: Install and Connect Tailscale
@@ -64,7 +60,7 @@ jobs:
           echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
 
       - name: Send RDP Info to Telegram
-        if: secrets.TELEGRAM_BOT_TOKEN && secrets.TELEGRAM_CHAT_ID
+        if: ${{ secrets.TELEGRAM_BOT_TOKEN && secrets.TELEGRAM_CHAT_ID }} # ڕاستکرایەوە
         run: |
           $message = "✅ RDP Session is Ready!%0A%0A🖥️ Address: ${{ env.TAILSCALE_IP }}%0A👤 Username: ${{ env.RDP_USER }}%0A🔑 Password: ${{ env.RDP_PASS }}"
           $botToken = "${{ secrets.TELEGRAM_BOT_TOKEN }}"
@@ -85,21 +81,17 @@ jobs:
           }
 
       - name: Upload Current Session Files to Cloud
-        if: always() && secrets.RCLONE_CONF
+        if: always() && ${{ secrets.RCLONE_CONF }} # ڕاستکرایەوە
         run: |
           Write-Host "Starting file upload process..."
           $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
           $configPath = "$env:APPDATA\rclone\rclone.conf"
           New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
           Set-Content -Path $configPath -Value $rcloneConfig
-
-          $remoteName = "gdrive1" # گۆڕدرا بۆ ناوی remoteـەکەی تۆ
+          $remoteName = "gdrive1"
           $backupFolder = "My_RDP_Backup"
-
           Write-Host "Uploading Desktop folder..."
           rclone copy "C:\Users\yusf2000\Desktop" "$remoteName:$backupFolder/Desktop" --ignore-errors
-
           Write-Host "Uploading Documents folder..."
           rclone copy "C:\Users\yusf2000\Documents" "$remoteName:$backupFolder/Documents" --ignore-errors
-
           Write-Host "File upload finished."
