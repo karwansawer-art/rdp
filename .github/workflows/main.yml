@@ -1,4 +1,4 @@
-name: Persistent RDP Final (v12 - Ultimate Fix)
+name: Persistent RDP Final (v11 - With Downloads Sync)
 on:
   workflow_dispatch:
 
@@ -25,7 +25,8 @@ jobs:
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "yusf2000"
           New-Item -Path "C:\Users\yusf2000\Desktop" -ItemType Directory -Force
           New-Item -Path "C:\Users\yusf2000\Documents" -ItemType Directory -Force
-          New-Item -Path "C:\Users\yusf2000\Downloads" -ItemType Directory -Force
+          New-Item -Path "C:\Users\yusf2000\Downloads" -ItemType Directory -Force # <-- ئەم دێڕە زیاد کرا
+
           echo "RDP_USER=yusf2000" >> $env:GITHUB_ENV
           echo "RDP_PASS=$password" >> $env:GITHUB_ENV
 
@@ -43,9 +44,9 @@ jobs:
             $configPath = "$env:APPDATA\rclone\rclone.conf"
             New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
             Set-Content -Path $configPath -Value $env:RCLONE_CONF_CONTENT
-            rclone sync "gdrive1:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --create-empty-src-dirs --ignore-errors
-            rclone sync "gdrive1:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --create-empty-src-dirs --ignore-errors
-            rclone sync "gdrive1:My_RDP_Backup/Downloads" "C:\Users\yusf2000\Downloads" --create-empty-src-dirs --ignore-errors
+            rclone sync "gdrive:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --create-empty-src-dirs
+            rclone sync "gdrive:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --create-empty-src-dirs
+            rclone sync "gdrive:My_RDP_Backup/Downloads" "C:\Users\yusf2000\Downloads" --create-empty-src-dirs # <-- ئەم دێڕە زیاد کرا
           } else {
             Write-Host "RCLONE_CONF not found. Skipping download."
           }
@@ -84,10 +85,9 @@ jobs:
             $configPath = "$env:APPDATA\rclone\rclone.conf"
             New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
             Set-Content -Path $configPath -Value $env:RCLONE_CONF_CONTENT
-            rclone sync "C:\Users\yusf2000\Desktop" "gdrive1:My_RDP_Backup/Desktop" --create-empty-src-dirs --ignore-errors
-            rclone sync "C:\Users\yusf2000\Documents" "gdrive1:My_RDP_Backup/Documents" --create-empty-src-dirs --ignore-errors
-            rclone sync "C:\Users\yusf2000\Downloads" "gdrive1:My_RDP_Backup/Downloads" --create-empty-src-dirs --ignore-errors
+            rclone sync "C:\Users\yusf2000\Desktop" "gdrive:My_RDP_Backup/Desktop" --create-empty-src-dirs
+            rclone sync "C:\Users\yusf2000\Documents" "gdrive:My_RDP_Backup/Documents" --create-empty-src-dirs
+            rclone sync "C:\Users\yusf2000\Downloads" "gdrive:My_RDP_Backup/Downloads" --create-empty-src-dirs # <-- ئەم دێڕە زیاد کرا
           } else {
             Write-Host "RCLONE_CONF not found. Skipping upload."
           }
-        continue-on-error: true # <-- ئەم دێڕە گرنگە لێرەش زیاد کرا
