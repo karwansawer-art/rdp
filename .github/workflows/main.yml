@@ -1,4 +1,4 @@
-name: Persistent RDP with Sync (v4)
+name: Persistent RDP Final
 on:
   workflow_dispatch:
 
@@ -31,14 +31,18 @@ jobs:
           choco install -y googlechrome vscode 7zip rclone
 
       - name: Download Files from Cloud
-        if: ${{ secrets.RCLONE_CONF != '' }}
         run: |
-          $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
-          $configPath = "$env:APPDATA\rclone\rclone.conf"
-          New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
-          Set-Content -Path $configPath -Value $rcloneConfig
-          rclone copy "gdrive1:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --ignore-errors
-          rclone copy "gdrive1:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --ignore-errors
+          if ("${{ secrets.RCLONE_CONF }}" -ne "") {
+            Write-Host "RCLONE_CONF found. Downloading files..."
+            $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
+            $configPath = "$env:APPDATA\rclone\rclone.conf"
+            New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
+            Set-Content -Path $configPath -Value $rcloneConfig
+            rclone copy "gdrive1:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --ignore-errors
+            rclone copy "gdrive1:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --ignore-errors
+          } else {
+            Write-Host "RCLONE_CONF not found. Skipping download."
+          }
 
       - name: Connect to Tailscale
         run: |
@@ -64,11 +68,16 @@ jobs:
           }
 
       - name: Upload Files to Cloud
-        if: ${{ always() && secrets.RCLONE_CONF != '' }}
+        if: always() # ئەمە دەهێڵینەوە بۆ ئەوەی هەمیشە کار بکات
         run: |
-          $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
-          $configPath = "$env:APPDATA\rclone\rclone.conf"
-          New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
-          Set-Content -Path $configPath -Value $rcloneConfig
-          rclone copy "C:\Users\yusf2000\Desktop" "gdrive1:My_RDP_Backup/Desktop" --ignore-errors
-          rclone copy "C:\Users\yusf2000\Documents" "gdrive1:My_RDP_Backup/Documents" --ignore-errors
+          if ("${{ secrets.RCLONE_CONF }}" -ne "") {
+            Write-Host "RCLONE_CONF found. Uploading files..."
+            $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
+            $configPath = "$env:APPDATA\rclone\rclone.conf"
+            New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
+            Set-Content -Path $configPath -Value $rcloneConfig
+            rclone copy "C:\Users\yusf2000\Desktop" "gdrive1:My_RDP_Backup/Desktop" --ignore-errors
+            rclone copy "C:\Users\yusf2000\Documents" "gdrive1:My_RDP_Backup/Documents" --ignore-errors
+          } else {
+            Write-Host "RCLONE_CONF not found. Skipping upload."
+          }
