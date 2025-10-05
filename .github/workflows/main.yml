@@ -1,4 +1,4 @@
-name: Persistent RDP with Sync (6-Hour Stable)
+name: Persistent RDP with Sync (v3)
 on:
   workflow_dispatch:
 
@@ -36,9 +36,9 @@ jobs:
           choco install -y googlechrome vscode 7zip rclone
 
       - name: Download Previous Session Files from Cloud
-        if: ${{ secrets.RCLONE_CONF }} # ڕاستکرایەوە
+        if: ${{ secrets.RCLONE_CONF != '' }}
         run: |
-          Write-Host "Attempting to download previous session files..."
+          Write-Host "RCLONE_CONF found. Attempting to download previous session files..."
           $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
           $configPath = "$env:APPDATA\rclone\rclone.conf"
           New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
@@ -60,7 +60,7 @@ jobs:
           echo "TAILSCALE_IP=$tsIP" >> $env:GITHUB_ENV
 
       - name: Send RDP Info to Telegram
-        if: ${{ secrets.TELEGRAM_BOT_TOKEN && secrets.TELEGRAM_CHAT_ID }} # ڕاستکرایەوە
+        if: ${{ secrets.TELEGRAM_BOT_TOKEN != '' && secrets.TELEGRAM_CHAT_ID != '' }}
         run: |
           $message = "✅ RDP Session is Ready!%0A%0A🖥️ Address: ${{ env.TAILSCALE_IP }}%0A👤 Username: ${{ env.RDP_USER }}%0A🔑 Password: ${{ env.RDP_PASS }}"
           $botToken = "${{ secrets.TELEGRAM_BOT_TOKEN }}"
@@ -81,7 +81,7 @@ jobs:
           }
 
       - name: Upload Current Session Files to Cloud
-        if: always() && ${{ secrets.RCLONE_CONF }} # ڕاستکرایەوە
+        if: ${{ always() && secrets.RCLONE_CONF != '' }}
         run: |
           Write-Host "Starting file upload process..."
           $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
