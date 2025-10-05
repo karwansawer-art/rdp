@@ -1,4 +1,4 @@
-name: Persistent RDP Final (Fixed)
+name: Persistent RDP Final (v7)
 on:
   workflow_dispatch:
 
@@ -33,13 +33,13 @@ jobs:
 
       - name: Download Files from Cloud
         env:
-          RCLONE_CONF_BASE64: ${{ secrets.RCLONE_CONF }}
+          RCLONE_CONF_CONTENT: ${{ secrets.RCLONE_CONF }}
         run: |
-          if ($env:RCLONE_CONF_BASE64) {
-            Write-Host "RCLONE_CONF found. Decoding and downloading files..."
+          if ($env:RCLONE_CONF_CONTENT) {
+            Write-Host "RCLONE_CONF found. Writing config and downloading files..."
             $configPath = "$env:APPDATA\rclone\rclone.conf"
             New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
-            [System.IO.File]::WriteAllText($configPath, [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:RCLONE_CONF_BASE64)))
+            Set-Content -Path $configPath -Value $env:RCLONE_CONF_CONTENT
             rclone copy "gdrive1:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --ignore-errors
             rclone copy "gdrive1:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --ignore-errors
           } else {
@@ -72,13 +72,13 @@ jobs:
       - name: Upload Files to Cloud
         if: always()
         env:
-          RCLONE_CONF_BASE64: ${{ secrets.RCLONE_CONF }}
+          RCLONE_CONF_CONTENT: ${{ secrets.RCLONE_CONF }}
         run: |
-          if ($env:RCLONE_CONF_BASE64) {
-            Write-Host "RCLONE_CONF found. Encoding and uploading files..."
+          if ($env:RCLONE_CONF_CONTENT) {
+            Write-Host "RCLONE_CONF found. Writing config and uploading files..."
             $configPath = "$env:APPDATA\rclone\rclone.conf"
             New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
-            [System.IO.File]::WriteAllText($configPath, [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:RCLONE_CONF_BASE64)))
+            Set-Content -Path $configPath -Value $env:RCLONE_CONF_CONTENT
             rclone copy "C:\Users\yusf2000\Desktop" "gdrive1:My_RDP_Backup/Desktop" --ignore-errors
             rclone copy "C:\Users\yusf2000\Documents" "gdrive1:My_RDP_Backup/Documents" --ignore-errors
           } else {
