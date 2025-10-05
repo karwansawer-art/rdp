@@ -1,4 +1,4 @@
-name: Persistent RDP Final
+name: Persistent RDP Final (Fixed)
 on:
   workflow_dispatch:
 
@@ -19,11 +19,12 @@ jobs:
 
       - name: Create User
         run: |
-          New-LocalUser -Name "yusf2000" -Password (ConvertTo-SecureString -String "yusf2000" -AsPlainText -Force) -AccountNeverExpires
+          $password = "Yusf@2000#RDP"
+          New-LocalUser -Name "yusf2000" -Password (ConvertTo-SecureString -String $password -AsPlainText -Force) -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member "yusf2000"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "yusf2000"
           echo "RDP_USER=yusf2000" >> $env:GITHUB_ENV
-          echo "RDP_PASS=yusf2000" >> $env:GITHUB_ENV
+          echo "RDP_PASS=$password" >> $env:GITHUB_ENV
 
       - name: Install Software
         run: |
@@ -31,13 +32,14 @@ jobs:
           choco install -y googlechrome vscode 7zip rclone
 
       - name: Download Files from Cloud
+        env:
+          RCLONE_CONF_BASE64: ${{ secrets.RCLONE_CONF }}
         run: |
-          if ("${{ secrets.RCLONE_CONF }}" -ne "") {
-            Write-Host "RCLONE_CONF found. Downloading files..."
-            $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
+          if ($env:RCLONE_CONF_BASE64) {
+            Write-Host "RCLONE_CONF found. Decoding and downloading files..."
             $configPath = "$env:APPDATA\rclone\rclone.conf"
             New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
-            Set-Content -Path $configPath -Value $rcloneConfig
+            [System.IO.File]::WriteAllText($configPath, [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:RCLONE_CONF_BASE64)))
             rclone copy "gdrive1:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --ignore-errors
             rclone copy "gdrive1:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --ignore-errors
           } else {
@@ -68,14 +70,15 @@ jobs:
           }
 
       - name: Upload Files to Cloud
-        if: always() # ئەمە دەهێڵینەوە بۆ ئەوەی هەمیشە کار بکات
+        if: always()
+        env:
+          RCLONE_CONF_BASE64: ${{ secrets.RCLONE_CONF }}
         run: |
-          if ("${{ secrets.RCLONE_CONF }}" -ne "") {
-            Write-Host "RCLONE_CONF found. Uploading files..."
-            $rcloneConfig = "${{ secrets.RCLONE_CONF }}"
+          if ($env:RCLONE_CONF_BASE64) {
+            Write-Host "RCLONE_CONF found. Encoding and uploading files..."
             $configPath = "$env:APPDATA\rclone\rclone.conf"
             New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
-            Set-Content -Path $configPath -Value $rcloneConfig
+            [System.IO.File]::WriteAllText($configPath, [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($env:RCLONE_CONF_BASE64)))
             rclone copy "C:\Users\yusf2000\Desktop" "gdrive1:My_RDP_Backup/Desktop" --ignore-errors
             rclone copy "C:\Users\yusf2000\Documents" "gdrive1:My_RDP_Backup/Documents" --ignore-errors
           } else {
