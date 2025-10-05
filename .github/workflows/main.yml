@@ -1,4 +1,4 @@
-name: Persistent RDP Final (v7)
+name: Persistent RDP Final (v8 - The Working One)
 on:
   workflow_dispatch:
 
@@ -17,12 +17,14 @@ jobs:
       - name: Set Timezone
         run: Set-TimeZone -Id "Arabic Standard Time"
 
-      - name: Create User
+      - name: Create User and Profile Folders
         run: |
           $password = "Yusf@2000#RDP"
           New-LocalUser -Name "yusf2000" -Password (ConvertTo-SecureString -String $password -AsPlainText -Force) -AccountNeverExpires
           Add-LocalGroupMember -Group "Administrators" -Member "yusf2000"
           Add-LocalGroupMember -Group "Remote Desktop Users" -Member "yusf2000"
+          New-Item -Path "C:\Users\yusf2000\Desktop" -ItemType Directory -Force
+          New-Item -Path "C:\Users\yusf2000\Documents" -ItemType Directory -Force
           echo "RDP_USER=yusf2000" >> $env:GITHUB_ENV
           echo "RDP_PASS=$password" >> $env:GITHUB_ENV
 
@@ -36,12 +38,11 @@ jobs:
           RCLONE_CONF_CONTENT: ${{ secrets.RCLONE_CONF }}
         run: |
           if ($env:RCLONE_CONF_CONTENT) {
-            Write-Host "RCLONE_CONF found. Writing config and downloading files..."
+            Write-Host "RCLONE_CONF found. Writing config and syncing files..."
             $configPath = "$env:APPDATA\rclone\rclone.conf"
-            New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
             Set-Content -Path $configPath -Value $env:RCLONE_CONF_CONTENT
-            rclone copy "gdrive1:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --ignore-errors
-            rclone copy "gdrive1:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --ignore-errors
+            rclone sync "gdrive1:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --create-empty-src-dirs --ignore-errors
+            rclone sync "gdrive1:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --create-empty-src-dirs --ignore-errors
           } else {
             Write-Host "RCLONE_CONF not found. Skipping download."
           }
@@ -75,12 +76,11 @@ jobs:
           RCLONE_CONF_CONTENT: ${{ secrets.RCLONE_CONF }}
         run: |
           if ($env:RCLONE_CONF_CONTENT) {
-            Write-Host "RCLONE_CONF found. Writing config and uploading files..."
+            Write-Host "RCLONE_CONF found. Writing config and syncing files..."
             $configPath = "$env:APPDATA\rclone\rclone.conf"
-            New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
             Set-Content -Path $configPath -Value $env:RCLONE_CONF_CONTENT
-            rclone copy "C:\Users\yusf2000\Desktop" "gdrive1:My_RDP_Backup/Desktop" --ignore-errors
-            rclone copy "C:\Users\yusf2000\Documents" "gdrive1:My_RDP_Backup/Documents" --ignore-errors
+            rclone sync "C:\Users\yusf2000\Desktop" "gdrive1:My_RDP_Backup/Desktop" --create-empty-src-dirs --ignore-errors
+            rclone sync "C:\Users\yusf2000\Documents" "gdrive1:My_RDP_Backup/Documents" --create-empty-src-dirs --ignore-errors
           } else {
             Write-Host "RCLONE_CONF not found. Skipping upload."
           }
