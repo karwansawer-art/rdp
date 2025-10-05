@@ -1,4 +1,4 @@
-name: Persistent RDP Final (v13 - Service Account)
+name: Persistent RDP (v13.1 - Syntax Fix)
 on:
   workflow_dispatch:
 
@@ -34,31 +34,28 @@ jobs:
           Set-ExecutionPolicy Bypass -Scope Process -Force; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
           choco install -y googlechrome vscode 7zip rclone
 
-      - name: Setup Rclone and Sync
+      - name: Setup Rclone and Download
+        if: env.RCLONE_SA_JSON
         env:
           RCLONE_SA_JSON: ${{ secrets.RCLONE_SA_JSON }}
         run: |
-          if ($env:RCLONE_SA_JSON) {
-            Write-Host "Service Account JSON found. Configuring rclone..."
-            $rcloneConfig = @"
+          Write-Host "Service Account JSON found. Configuring rclone..."
+          $rcloneConfig = @"
 [gdrive]
 type = drive
 scope = drive
 service_account_file = C:\Users\runneradmin\sa.json
 "@
-            $configPath = "$env:APPDATA\rclone\rclone.conf"
-            $saPath = "C:\Users\runneradmin\sa.json"
-            New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
-            Set-Content -Path $configPath -Value $rcloneConfig
-            Set-Content -Path $saPath -Value $env:RCLONE_SA_JSON
+          $configPath = "$env:APPDATA\rclone\rclone.conf"
+          $saPath = "C:\Users\runneradmin\sa.json"
+          New-Item -Path (Split-Path $configPath) -ItemType Directory -Force
+          Set-Content -Path $configPath -Value $rcloneConfig
+          Set-Content -Path $saPath -Value $env:RCLONE_SA_JSON
 
-            Write-Host "Downloading files from Google Drive..."
-            rclone sync "gdrive:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --create-empty-src-dirs --ignore-errors
-            rclone sync "gdrive:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --create-empty-src-dirs --ignore-errors
-            rclone sync "gdrive:My_RDP_Backup/Downloads" "C:\Users\yusf2000\Downloads" --create-empty-src-dirs --ignore-errors
-          } else {
-            Write-Host "RCLONE_SA_JSON not found. Skipping sync."
-          }
+          Write-Host "Downloading files from Google Drive..."
+          rclone sync "gdrive:My_RDP_Backup/Desktop" "C:\Users\yusf2000\Desktop" --create-empty-src-dirs --ignore-errors
+          rclone sync "gdrive:My_RDP_Backup/Documents" "C:\Users\yusf2000\Documents" --create-empty-src-dirs --ignore-errors
+          rclone sync "gdrive:My_RDP_Backup/Downloads" "C:\Users\yusf2000\Downloads" --create-empty-src-dirs --ignore-errors
         continue-on-error: true
 
       - name: Connect to Tailscale
@@ -85,18 +82,13 @@ service_account_file = C:\Users\runneradmin\sa.json
           }
 
       - name: Upload Files to Cloud
-        if: always()
+        if: always() && env.RCLONE_SA_JSON
         env:
           RCLONE_SA_JSON: ${{ secrets.RCLONE_SA_JSON }}
         run: |
-          if ($env:RCLONE_SA_JSON) {
-            Write-Host "Service Account JSON found. Uploading files..."
-            # The config file is already created in the previous step, no need to recreate
-            rclone sync "C:\Users\yusf2000\Desktop" "gdrive:My_RDP_Backup/Desktop" --create-empty-src-dirs --ignore-errors
-            rclone sync "C:\Users\yusf2000\Documents" "gdrive:My_RDP_Backup/Documents" --create-empty-src-dirs --ignore-errors
-            rclone sync "C:\Users\yusf2000\Downloads" "gdrive:My_RDP_Backup/Downloads" --create-empty-src-dirs --ignore-errors
-            Write-Host "Upload complete."
-          } else {
-            Write-Host "RCLONE_SA_JSON not found. Skipping upload."
-          }
+          Write-Host "Service Account JSON found. Uploading files..."
+          rclone sync "C:\Users\yusf2000\Desktop" "gdrive:My_RDP_Backup/Desktop" --create-empty-src-dirs --ignore-errors
+          rclone sync "C:\Users\yusf2000\Documents" "gdrive:My_RDP_Backup/Documents" --create-empty-src-dirs --ignore-errors
+          rclone sync "C:\Users\yusf2000\Downloads" "gdrive:My_RDP_Backup/Downloads" --create-empty-src-dirs --ignore-errors
+          Write-Host "Upload complete."
         continue-on-error: true
